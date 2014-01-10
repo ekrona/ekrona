@@ -1,0 +1,9 @@
+Building ekrona on Debian Linux:
+
+sudo apt-get update 
+sudo apt-get install build-essential libboost-all-dev libcurl4-openssl-dev libdb5.1-dev libdb5.1++-dev git qt-sdk libminiupnpc-dev
+
+
+make -f makefile.unix USE_UPNP=-
+
+
