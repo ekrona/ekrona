@@ -81,7 +81,6 @@ LIBS+= \
     HARDENING+=-D_FORTIFY_SOURCE=2
 #
 
-mkdir obj
 
 DEBUGFLAGS=-g
 
