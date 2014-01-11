@@ -21,7 +21,7 @@ ekrona is a modified version of Litecoin using scrypt as a proof-of-work algorit
 For more information, as well as an immediately useable, binary version of
 the ekrona client sofware, see cryptocointalk forum.
 
-Official website: ekrona.org
+Official website: http://ekrona.org
 
 License
 -------
