@@ -1,9 +1,45 @@
-Building ekrona on Debian Linux:
+--------------------------------
+Building Ekrona on Debian Linux:
 
 sudo apt-get update 
 sudo apt-get install build-essential libboost-all-dev libcurl4-openssl-dev libdb5.1-dev libdb5.1++-dev git qt-sdk libminiupnpc-dev
 
+mkdir obj
 
 make -f makefile.unix USE_UPNP=-
 
+--------------------------------
+Building Ekrona on Ubuntu Linux:
+
+sudo apt-get update
+
+sudo apt-get install yasm -y git make g++ build-essential libminiupnpc-dev
+
+sudo apt-get install -y libboost-all-dev libdb++-dev libgmp-dev libssl-dev dos2unix
+
+git clone https://github.com/ekrona/ekrona.git
+
+cd ekrona/src
+
+mkdir obj
+
+make -f makefile.unix
+
+sudo cp -f ekronad /usr/local/bin/
+
+ekronad –daemon
+
+--------------------------
+Sample configuration file:
+
+ekrona.conf
+
+server=1
+gen=1
+rpcallowip=127.0.0.1
+addnode=95.85.54.115
+addnode=95.85.52.28
+addnode=95.85.52.36
+rpcuser=username
+rpcpassword=youranypassword
 
