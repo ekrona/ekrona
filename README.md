@@ -7,10 +7,10 @@ Copyright (c) 2009-2013 Bitcoin Developers
 Copyright (c) 2011-2013 Litecoin Developers
 Copyright (c) 2013 ekrona Developers
 
-What is ekrona?
+What is Ekrona?
 ----------------
 
-ekrona is a modified version of Litecoin using scrypt as a proof-of-work algorithm:
+Ekrona is a modified version of Litecoin using scrypt as a proof-of-work algorithm:
  - 40 coins per block
  - 3.3 minutes block targets (200 seconds)
  - Subsidy halves in 500k blocks (ca. 3.3 years)
