@@ -854,6 +854,10 @@ int64 static GetBlockValue(int nHeight, int64 nFees, uint256 prevHash)
 static const int64 nTargetTimespan = 18 * 60 * 60; // ekrona: 18  hours
 static const int64 nTargetSpacing = 200; // ekrona: 3.3 minutes
 
+static const int64 nTargetTimespan_shield = 200; // ekrona: 3.3 minutes
+static const int64 nTargetSpacing_shield = 200; // ekrona: 3.3 minutes
+static const int64 nInterval_shield = nTargetTimespan_shield / nTargetSpacing_shield; // Each block
+
 //
 // minimum amount of work that could possibly be required nTime after
 // minimum work required was nBase
@@ -879,7 +883,7 @@ unsigned int ComputeMinWork(unsigned int nBase, int64 nTime)
     return bnResult.GetCompact();
 }
 
-unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock *pblock)
+unsigned int static GetNextWorkRequired_Original(const CBlockIndex* pindexLast, const CBlock *pblock)
 {
     unsigned int nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
 
@@ -988,6 +992,91 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
     printf("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
 
     return bnNew.GetCompact();
+}
+
+unsigned int static GetNextWorkRequired_DigiShield(const CBlockIndex* pindexLast, const CBlock *pblock)
+{
+    unsigned int nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
+
+    int blockstogoback = 0;
+
+    int64 retargetTimespan = nTargetTimespan_shield;
+    int64 retargetSpacing = nTargetSpacing_shield;
+    int64 retargetInterval = nInterval_shield;
+    // Genesis block
+    if (pindexLast == NULL) return nProofOfWorkLimit;
+    
+    // Only change once per interval
+    if ((pindexLast->nHeight+1) % retargetInterval != 0){
+      // Special difficulty rule for testnet:
+		if (fTestNet){
+			// If the new block's timestamp is more than 2* 10 minutes
+			// then allow mining of a min-difficulty block.
+			if (pblock->nTime > pindexLast->nTime + retargetSpacing*2)
+				return nProofOfWorkLimit;
+		else {
+			// Return the last non-special-min-difficulty-rules-block
+			const CBlockIndex* pindex = pindexLast;
+			while (pindex->pprev && pindex->nHeight % retargetInterval != 0 && pindex->nBits == nProofOfWorkLimit) 
+			pindex = pindex->pprev;
+		return pindex->nBits;
+		}
+      }  
+      return pindexLast->nBits;
+    }
+    
+    // DigiByte: This fixes an issue where a 51% attack can change difficulty at will.
+    // Go back the full period unless it's the first retarget after genesis. Code courtesy of Art Forz
+    blockstogoback = retargetInterval-1;
+    if ((pindexLast->nHeight+1) != retargetInterval) blockstogoback = retargetInterval;
+    
+    // Go back by what we want to be 14 days worth of blocks
+    const CBlockIndex* pindexFirst = pindexLast;
+    for (int i = 0; pindexFirst && i < blockstogoback; i++)
+        pindexFirst = pindexFirst->pprev;
+    assert(pindexFirst);
+
+    // Limit adjustment step
+    int64 nActualTimespan = pindexLast->GetBlockTime() - pindexFirst->GetBlockTime();
+    printf("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
+
+
+
+    CBigNum bnNew;
+    bnNew.SetCompact(pindexLast->nBits);
+    
+    if (nActualTimespan < (retargetTimespan - (retargetTimespan/4)) ) nActualTimespan = (retargetTimespan - (retargetTimespan/4));
+    if (nActualTimespan > (retargetTimespan + (retargetTimespan/2)) ) nActualTimespan = (retargetTimespan + (retargetTimespan/2));
+
+    // Retarget
+    bnNew *= nActualTimespan;
+    bnNew /= retargetTimespan;
+    
+    /// debug print
+    printf("GetNextWorkRequired RETARGET \n");
+    printf("retargetTimespan = %"PRI64d"    nActualTimespan = %"PRI64d"\n", retargetTimespan, nActualTimespan);
+    printf("Before: %08x  %s\n", pindexLast->nBits, CBigNum().SetCompact(pindexLast->nBits).getuint256().ToString().c_str());
+    printf("After:  %08x  %s\n", bnNew.GetCompact(), bnNew.getuint256().ToString().c_str());
+    
+
+    if (bnNew > bnProofOfWorkLimit)
+        bnNew = bnProofOfWorkLimit;
+
+
+
+    return bnNew.GetCompact();
+}
+
+unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock *pblock)
+{
+        int DiffMode = 1; // legacy diff-mode
+		int height = pindexLast->nHeight+1;
+
+		if (height >= 45000) { DiffMode = 2; }
+
+        if             (DiffMode == 1) { return GetNextWorkRequired_Original(pindexLast, pblock); } //legacy diff mode
+        else if        (DiffMode == 2) { return GetNextWorkRequired_DigiShield(pindexLast, pblock); } // DigiShield
+        return GetNextWorkRequired_DigiShield(pindexLast, pblock); // DigiShield
 }
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits)
